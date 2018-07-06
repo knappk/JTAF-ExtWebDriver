@@ -28,7 +28,7 @@ public interface IInteractiveElement extends IReadableElement
      * 
      * @throws WidgetException
      */
-    public void click() throws WidgetException;
+    void click() throws WidgetException;
 
     /**
      * Implementing this method would allow for double clicking on the
@@ -36,7 +36,7 @@ public interface IInteractiveElement extends IReadableElement
      * 
      * @throws WidgetException
      */
-    public void doubleClick() throws WidgetException;
+    void doubleClick() throws WidgetException;
 
     /**
      * Implementing this method would allow for right clicking on the
@@ -44,7 +44,7 @@ public interface IInteractiveElement extends IReadableElement
      * 
      * @throws WidgetException
      */
-    public void rightClick() throws WidgetException;
+    void rightClick() throws WidgetException;
 
     /**
      * Implementing this method would allow for checking if the interactive
@@ -64,7 +64,7 @@ public interface IInteractiveElement extends IReadableElement
      *            - the element that is to be drag and dropped
      * @throws WidgetException
      */
-    public void dragAndDrop(IElement element) throws WidgetException;
+    void dragAndDrop(IElement element) throws WidgetException;
 
     /**
      * Implementing this method would allow for drag and dropping by a specific
@@ -74,7 +74,7 @@ public interface IInteractiveElement extends IReadableElement
      * @param yOffset
      * @throws WidgetException
      */
-    public void dragAndDropByOffset(int xOffset, int yOffset) throws WidgetException;
+    void dragAndDropByOffset(int xOffset, int yOffset) throws WidgetException;
 
     /**
      * Implementing this method would allow for 'pushing' specific key is down
@@ -83,7 +83,7 @@ public interface IInteractiveElement extends IReadableElement
      *            - the key to be 'pushed' down
      * @throws WidgetException
      */
-    public void keyDown(Keys theKey) throws WidgetException;
+    void keyDown(Keys theKey) throws WidgetException;
 
     /**
      * Implementing this method would allow for releasing specific key
@@ -92,7 +92,7 @@ public interface IInteractiveElement extends IReadableElement
      *            - the key to be released
      * @throws WidgetException
      */
-    public void keyUp(Keys theKey) throws WidgetException;
+    void keyUp(Keys theKey) throws WidgetException;
 
     /**
      * Implementing this method would allow for clicking on an element and
@@ -100,7 +100,7 @@ public interface IInteractiveElement extends IReadableElement
      * 
      * @throws WidgetException
      */
-    public void clickAndHold() throws WidgetException;
+    void clickAndHold() throws WidgetException;
 
     /**
      * Implementing this method would allow for releasing the element that is
@@ -108,7 +108,7 @@ public interface IInteractiveElement extends IReadableElement
      * 
      * @throws WidgetException
      */
-    public void releaseClickAndHold() throws WidgetException;
+    void releaseClickAndHold() throws WidgetException;
 
     /**
      * Implementing this method would allow for sending keys to an element like
@@ -119,7 +119,7 @@ public interface IInteractiveElement extends IReadableElement
      *            - the keys to be sent to the interactive element
      * @throws WidgetException
      */
-    public void sendKeys(CharSequence keysToSend) throws WidgetException;
+    void sendKeys(CharSequence keysToSend) throws WidgetException;
 
     /**
      * Implementing this method would allow for typing a value to the said
@@ -129,7 +129,7 @@ public interface IInteractiveElement extends IReadableElement
      *            - the text you want typed onto the interactive element
      * @throws WidgetException
      */
-    public void type(String text) throws WidgetException;
+    void type(String text) throws WidgetException;
 
     /**
      * Implementing this method would allow for appending to an already typed
@@ -138,7 +138,7 @@ public interface IInteractiveElement extends IReadableElement
      * @param text
      *            Text to append
      */
-    public void typeAppend(String text) throws WidgetException;
+    void typeAppend(String text) throws WidgetException;
 
     /**
      * Implementing this method would allow for triggering the mouse move event
@@ -146,7 +146,7 @@ public interface IInteractiveElement extends IReadableElement
      * 
      * @throws WidgetException
      */
-    public void mouseMove() throws WidgetException;
+    void mouseMove() throws WidgetException;
 
     /**
      * Implementing this method would allow for moving the mouse to an area
@@ -154,7 +154,7 @@ public interface IInteractiveElement extends IReadableElement
      * 
      * @throws WidgetException
      */
-    public void mouseMoveOut() throws WidgetException;
+    void mouseMoveOut() throws WidgetException;
 
     /**
      * Implementing this method would allow for moving the mouse over the
@@ -162,5 +162,5 @@ public interface IInteractiveElement extends IReadableElement
      * 
      * @throws WidgetException
      */
-    public void mouseOver() throws WidgetException;
+    void mouseOver() throws WidgetException;
 }

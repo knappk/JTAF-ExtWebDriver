@@ -20,6 +20,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,15 +32,20 @@ import org.apache.commons.configuration.PropertiesConfigurationLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+
 /**
  * Enables storage of and access to driver and browser configuration.
- *
+ * 
  */
 public class ClientProperties {
+	private static final String CLIENT_KEY = "client";
+	
     private final Logger logger = LoggerFactory.getLogger(ClientProperties.class.getPackage().getName());
 
     private URL client;
-
+    
+    private final Map<String, String> options;
     private final PropertiesConfiguration config;
     private final PropertiesConfigurationLayout propertiesConfigurationLayout;
 
@@ -68,6 +74,7 @@ public class ClientProperties {
     private final String binaryPath;
     private final String webDriverIEDriver;
     private final String webDriverChromeDriver;
+    private final String webDriverGeckoDriver;
 
     private boolean isHighlight;
     private final Map<String, String> highlightColorMap;
@@ -88,6 +95,10 @@ public class ClientProperties {
     private final String gridUrl;
     private final String gridPlatform;
     private final String gridProperties;
+    private final String gridSauceFile;
+    private final String tunnelIdentifier;
+    
+    private final boolean ignoreSecurityDomains;
 
     /**
      * Constructs a {@code ClientProperties} from the given file.
@@ -96,6 +107,13 @@ public class ClientProperties {
      *            the file to be loaded
      */
     public ClientProperties(String filePath) {
+    	this(Collections.singletonMap(CLIENT_KEY, filePath));
+    }
+    
+    public ClientProperties(Map<String, String> options) {
+    	this.options = ImmutableMap.copyOf(options);
+    	String filePath = options.get(CLIENT_KEY);
+    	
         URL clientPath = this.getClass().getClassLoader().getResource(filePath);
         if(clientPath == null) {
         	try {
@@ -128,20 +146,20 @@ public class ClientProperties {
                 "Horizontal position for moving browser to. Useful for debugging tests.");
         try {
             browserInitPositionX = Integer.parseInt(browserInitPositionXStr);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             logger.error("Error parsing '"
                     + browserInitPositionXStr
-                    + "' (value of 'browser.init.position.x' property from client properties file) as integer. Please fix your test configuration.");
+                    + "' (value of 'browser.init.position.x' property from client properties file) as integer. Please fix your test configuration.",e);
         }
 
         String browserInitPositionYStr = load("browser.init.position.y", "0",
                 "Vertical position for moving browser to. Useful for debugging tests.");
         try {
             browserInitPositionY = Integer.parseInt(browserInitPositionYStr);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             logger.error("Error parsing '"
                     + browserInitPositionYStr
-                    + "' (value of 'browser.init.position.y' property from client properties file) as integer. Please fix your test configuration.");
+                    + "' (value of 'browser.init.position.y' property from client properties file) as integer. Please fix your test configuration.",e);
         }
 
         os = load("os", null, null);
@@ -150,21 +168,30 @@ public class ClientProperties {
                 "Standard maximum page wait timeout throughout your automation project (in milliseconds)");
         try {
             maxPageWait = Integer.parseInt(maxPageWaitString);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
+            logger.error("Error parsing '"
+                    + maxPageWaitString
+                    + "'",e);
         }
 
         appearWaitTimeString = load("appearWaitTime", "5000",
                 "Maximum time for waiting of element appear (in milliseconds)");
         try {
             appearWaitTime = Integer.parseInt(appearWaitTimeString);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
+            logger.error("Error parsing '"
+                    + appearWaitTimeString
+                    + "'",e);
         }
 
         maxRequestTimeoutString = load("maxRequestTimeout", "30000",
                 "Standard maximum request wait timeout throughout your automation project (in milliseconds)");
         try {
             maxRequestTimeout = Integer.parseInt(maxRequestTimeoutString);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
+            logger.error("Error parsing '"
+                    + maxRequestTimeoutString
+                    + "'",e);
         }
 
         maxDownloadWaitTime = Integer.parseInt(load("download.time", "30000",
@@ -177,6 +204,7 @@ public class ClientProperties {
         webDriverIEDriver = load("webdriver.ie.driver", null, "Path to IEDriverServer.exe");
         webDriverChromeDriver = load("webdriver.chrome.driver", null,
                 "Path to chromedriver executable");
+        webDriverGeckoDriver = load("webdriver.gecko.driver", null, "Path to GeckoDriver executable");
 
         String uploadFolderStr = load("upload.folder", null,
                 "Default folder to grab files from to perform upload");
@@ -196,11 +224,7 @@ public class ClientProperties {
         // Check before 'webdriver.doTaskKill'
         String useGridStr = load("useGrid", "false",
                 "Setting for running tests against Selenium Grid or Sauce Labs");
-        if (useGridStr != null && useGridStr.equalsIgnoreCase("true")) {
-            useGrid = true;
-        } else {
-            useGrid = false;
-        }
+        useGrid = useGridStr != null && useGridStr.equalsIgnoreCase("true");
 
         // Check after 'useGrid'
         String taskCheck = load("webdriver.doTaskKill", "true",
@@ -209,8 +233,8 @@ public class ClientProperties {
             if (taskCheck.equalsIgnoreCase("false") || taskCheck.equalsIgnoreCase("0")
                     || taskCheck.equalsIgnoreCase("no") || useGrid) {
                 doTaskKill = false;
-            } else if ((taskCheck.equalsIgnoreCase("true") || taskCheck.equalsIgnoreCase("1") || taskCheck
-                    .equalsIgnoreCase("yes"))) {
+            } else if (taskCheck.equalsIgnoreCase("true") || taskCheck.equalsIgnoreCase("1") || taskCheck
+                    .equalsIgnoreCase("yes")) {
                 doTaskKill = true;
             } else {
                 logger.error("Property 'doTaskKill' is not within range of accepted values. (Range of accepted values are '1'/'0', 'Yes'/'No' and 'True'/'False')");
@@ -227,7 +251,10 @@ public class ClientProperties {
                 "Specify the period of which you want to keep temporary WebDriver folders created in temp directory");
         try {
             numberOfDaysToKeepTempFolders = Integer.parseInt(numberOfDaysToKeepTempFoldersStr);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
+            logger.error("Error parsing '"
+                    + numberOfDaysToKeepTempFoldersStr
+                    + "'",e);
         }
 
         tempFolderNameContainsList = load("tempFolderNameContainsList", null,
@@ -273,6 +300,8 @@ public class ClientProperties {
             selectLastFrame = true;
         }
 
+        gridSauceFile = load("grid.saucefile", null, "grid sauce file goes here") ;
+        
         gridUrl = load("grid.url",
                 "http://username-string:access-key-string@ondemand.saucelabs.com:80/wd/hub",
                 "Sauce labs URL (e.g. 'http://username-string:access-key-string@ondemand.saucelabs.com:80/wd/hub')");
@@ -280,6 +309,9 @@ public class ClientProperties {
                 "Selenium Grid OS Platform name (e.g. 'Windows 7')");
         gridProperties = load("grid.properties", "record-screenshots=true",
                 "Space separated Selenium Grid properties (e.g. 'record-screenshots=true')");
+        tunnelIdentifier = load("tunnel.identifier", null, "sauce connect tunnel name");
+        
+        ignoreSecurityDomains = Boolean.parseBoolean(load("webdriver.ie.ignoreSecDomains", "false", "ignore security domains for IE"));
     }
 
     /**
@@ -300,7 +332,9 @@ public class ClientProperties {
      *         already contains the given key
      */
     private final String load(String key, String defaultValue, String comment) {
-        if (config.getProperty(key) != null) {
+    	if(options.containsKey(key)) {
+    		return options.get(key);
+    	} else if (config.getProperty(key) != null) {
             return config.getString(key);
         } else {
             if (defaultValue != null) {
@@ -358,8 +392,6 @@ public class ClientProperties {
             	highlightColorMap.put("get".toUpperCase(), load("highlight.get", "rgb(135, 206, 250)", "color for highlight element during finding"));
             if(!highlightColorMap.containsKey("put"))
             	highlightColorMap.put("put".toUpperCase(), load("highlight.put", "rgb(152, 251, 152)", "color for highlight element during finding"));
-
-
 
       }
 
@@ -514,6 +546,15 @@ public class ClientProperties {
     public String getWebDriverChromeDriver() {
         return webDriverChromeDriver;
     }
+    
+    /**
+     * Returns the path to geckodriver.exe
+     * 
+     * @return
+     */
+    public String getWebDriverGeckoDriver() {
+    	return webDriverGeckoDriver;
+    }
 
     /**
      * Returns the name of the browser.
@@ -610,7 +651,16 @@ public class ClientProperties {
     public boolean isUseGrid() {
         return useGrid;
     }
-
+    
+    /**
+     * Returns the Selenium Grid Sauce File.
+     * 
+     * @return the Selenium Grid Sauce File
+     */
+    public String getGridSaucefile() {
+        return gridSauceFile;
+    }
+    
     /**
      * Returns the Selenium Grid platform.
      *
@@ -673,4 +723,12 @@ public class ClientProperties {
     public URL getClient() {
         return client;
     }
+
+    public String getTunnelIdentifier() {
+        return tunnelIdentifier;
+    }
+
+	public boolean shouldIgnoreSecurityDomains() {
+		return ignoreSecurityDomains;
+	}
 }

@@ -30,6 +30,5 @@ public interface IButton extends IInteractiveElement
      * @return the text of a button's label as a String
      * @throws WidgetException
      */
-    @Override
     public String getLabel() throws WidgetException;
 }

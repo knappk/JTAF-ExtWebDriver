@@ -43,10 +43,17 @@ public class InteractiveElement extends Element implements IInteractiveElement
     /**
      * 
      * @param locator
-     *            an By-expression.
+    *            XPath, ID, name, CSS Selector, class name, or tag name
      */
-    public InteractiveElement(By locator)
-    {
+	public InteractiveElement(String locator) {
+		super(locator);
+	}
+
+   /**
+    *
+    * @param locator an By-expression.
+    */
+    public InteractiveElement(By locator) {
         super(locator);
     }
 
@@ -276,7 +283,6 @@ public class InteractiveElement extends Element implements IInteractiveElement
                     + theKey.name(), getByLocator(), e);
         }
     }
-
     /*
      * (non-Javadoc)
      * 
@@ -350,12 +356,11 @@ public class InteractiveElement extends Element implements IInteractiveElement
             throw new WidgetException("Error while sending keys", getByLocator(),
                     e);
         }
-
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see qc.automation.framework.widget.IInteractiveElement#type(java.lang.String,
      * java.lang.String)
      */
@@ -366,7 +371,11 @@ public class InteractiveElement extends Element implements IInteractiveElement
         {
             if (getGUIDriver().isJavascriptTypeMode())
             {
-                final String theText = text;
+
+				// Replaces apostrophes that have not been escaped with escaped variations
+                // Slashes need to be escaped multiple times.  Once for Java's string escaping
+                // and again for the RegEx engine escaping.
+                final String theText = text.replaceAll("(\\\\')|(\\')", "\\\\'");
                 highlight(HIGHLIGHT_MODES.PUT);
                 try
                 {
@@ -406,7 +415,7 @@ public class InteractiveElement extends Element implements IInteractiveElement
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see qc.automation.framework.widget.IInteractiveElement#typeAppend(java.lang.String,
      * java.lang.String)
      */
@@ -519,5 +528,4 @@ public class InteractiveElement extends Element implements IInteractiveElement
     {
         throw new UnsupportedOperationException("getLabel() is not supported by InteractiveElement");
     }
-
 }

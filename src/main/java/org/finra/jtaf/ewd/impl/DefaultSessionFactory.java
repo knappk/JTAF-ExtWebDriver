@@ -34,6 +34,7 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
+import com.google.common.base.Strings;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,6 +45,8 @@ import org.openqa.selenium.Point;
 import org.openqa.selenium.Proxy;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.firefox.FirefoxBinary;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxProfile;
@@ -57,8 +60,8 @@ import org.openqa.selenium.safari.SafariDriver;
 
 /**
  * SessionPool functionality used by SessionManager instances.
- * 
- * 
+ *
+ *
  */
 
 public class DefaultSessionFactory implements SessionFactory {
@@ -75,14 +78,15 @@ public class DefaultSessionFactory implements SessionFactory {
     @Override
     public void cleanup(Map<String, String> options) throws Exception {
 
-        ClientProperties properties = new ClientProperties(options.get("client"));
+        ClientProperties properties = new ClientProperties(options);
 
         if (!executedTaskKill) {
             synchronized (lock) {
                 if (properties.isKillTasksAtStartup()) {
                     if (properties.getBrowser().equalsIgnoreCase("ie")
                             || properties.getBrowser().equalsIgnoreCase("iexplore")
-                            || properties.getBrowser().equalsIgnoreCase("*iexplore")) {
+                            || properties.getBrowser().equalsIgnoreCase("*iexplore")
+                        	|| properties.getBrowser().equalsIgnoreCase("internet explorer")) {
                         try {
                             Runtime.getRuntime().exec("taskkill /F /IM IEDriverServer.exe /T");
                         } catch (IOException e) {
@@ -179,7 +183,7 @@ public class DefaultSessionFactory implements SessionFactory {
     @Override
     public DesiredCapabilities createCapabilities(Map<String, String> options) throws Exception {
 
-        ClientProperties properties = new ClientProperties(options.get("client"));
+        ClientProperties properties = new ClientProperties(options);
 
         final String browser = properties.getBrowser();
 
@@ -200,7 +204,8 @@ public class DefaultSessionFactory implements SessionFactory {
             }
 
             if (browser.equalsIgnoreCase("ie") || browser.equalsIgnoreCase("iexplore")
-                    || browser.equalsIgnoreCase("*iexplore")) {
+                    || browser.equalsIgnoreCase("*iexplore")
+            		|| browser.equalsIgnoreCase("internet explorer")) {
                 capabilities = DesiredCapabilities.internetExplorer();
             } else if ((browser.equalsIgnoreCase("firefox") || browser.equalsIgnoreCase("*firefox"))) {
                 capabilities = DesiredCapabilities.firefox();
@@ -216,10 +221,10 @@ public class DefaultSessionFactory implements SessionFactory {
                 capabilities = DesiredCapabilities.ipad();
             } else if (browser.equalsIgnoreCase("iphone")) {
                 capabilities = DesiredCapabilities.iphone();
-            } else if (browser.equalsIgnoreCase("edge")) {
-                capabilities = DesiredCapabilities.edge();
-            } else {
-                log.fatal("Unsupported browser: " + browser
+            } else if (browser.equalsIgnoreCase("MS Edge") || browser.equalsIgnoreCase("MicrosoftEdge") || browser.equalsIgnoreCase("edge")) {
+            	capabilities = DesiredCapabilities.edge();
+			} else {
+                throw new Exception("Unsupported browser: " + browser
                         + " Please refer to documentation for supported browsers.");
             }
 
@@ -233,6 +238,22 @@ public class DefaultSessionFactory implements SessionFactory {
                 capabilities.setCapability("platform", "Windows 7");
             }
 
+            String sauceFile = properties.getGridSaucefile() ;
+            if (sauceFile != null && sauceFile.length() > 0) {
+                Map<String,String> sOptions = new HashMap<String,String>();
+                sOptions.put("executable", "sauce-storage:" + sauceFile );
+                sOptions.put("args", "[ '--silent', '-a', '-q' ]");
+                sOptions.put("background", "true");
+                 
+                capabilities.setCapability("prerun",sOptions);
+            	
+            }
+            
+            String tunnelIdentifier = properties.getTunnelIdentifier();
+            if(!Strings.isNullOrEmpty(tunnelIdentifier)) {
+                capabilities.setCapability("tunnel-identifier", tunnelIdentifier);
+            }
+            
             // Set Proxy
             String proxyStr = properties.getProxy();
             String proxyHttps = properties.getProxyHttps();
@@ -347,7 +368,7 @@ public class DefaultSessionFactory implements SessionFactory {
     @Override
     public WebDriver createInnerDriver(Map<String, String> options, DesiredCapabilities capabilities)
             throws Exception {
-        ClientProperties properties = new ClientProperties(options.get("client"));
+        ClientProperties properties = new ClientProperties(options);
 
         WebDriver wd = null;
         DesiredCapabilities desiredCapabilities = new DesiredCapabilities(capabilities);
@@ -363,7 +384,7 @@ public class DefaultSessionFactory implements SessionFactory {
                 throw new RuntimeException(
                         "Browser cannot be null. Please set 'browser' in client properties. Supported browser types: IE, Firefox, Chrome, Safari, HtmlUnit.");
             } else if (browser.equalsIgnoreCase("ie") || browser.equalsIgnoreCase("iexplore")
-                    || browser.equalsIgnoreCase("*iexplore")) {
+                    || browser.equalsIgnoreCase("*iexplore") || browser.equalsIgnoreCase("internet explore")) {
                 String webdriverIEDriver = properties.getWebDriverIEDriver();
 
                 if (webdriverIEDriver != null) {
@@ -372,6 +393,9 @@ public class DefaultSessionFactory implements SessionFactory {
 
                 String browserVersion = properties.getBrowserVersion();
 
+				if(properties.shouldIgnoreSecurityDomains()) {
+					desiredCapabilities.setCapability(InternetExplorerDriver.INTRODUCE_FLAKINESS_BY_IGNORING_SECURITY_DOMAINS, true);
+				}
                 if (browserVersion == null || browserVersion.equals("")) {
                     throw new RuntimeException(
                             "When using IE as the browser, please set 'browser.version' in client properties");
@@ -387,7 +411,12 @@ public class DefaultSessionFactory implements SessionFactory {
                         wd = new InternetExplorerDriver(desiredCapabilities);
                     }
                 }
+                
             } else if ((browser.equalsIgnoreCase("firefox") || browser.equalsIgnoreCase("*firefox"))) {
+                final String webDriverGeckoDriver = properties.getWebDriverGeckoDriver();
+                if(webDriverGeckoDriver != null){
+                	System.setProperty("webdriver.gecko.driver", webDriverGeckoDriver);
+                }
                 final String ffProfileFolder = properties.getFirefoxProfileFolder();
                 final String ffProfileFile = properties.getFirefoxProfileFile();
                 final String path = properties.getBinaryPath();
@@ -424,11 +453,25 @@ public class DefaultSessionFactory implements SessionFactory {
                 if (webdriverChromeDriver != null) {
                     System.setProperty("webdriver.chrome.driver", webdriverChromeDriver);
                 }
+                
+                // for downloading with Chrome
+                if(properties.getDownloadFolder() != null) {
+                    HashMap<String, Object> chromePrefs = new HashMap<String, Object>();
+                    chromePrefs.put("profile.default_content_settings.popups", 0);
+                    chromePrefs.put("download.default_directory", properties.getDownloadFolder());
+                    ChromeOptions chromeOptions = new ChromeOptions();
+                    chromeOptions.setExperimentalOption("prefs", chromePrefs);
+                    desiredCapabilities.setCapability(ChromeOptions.CAPABILITY, chromeOptions);
+                }
 
                 wd = new ChromeDriver(desiredCapabilities);
             } else if (browser.equalsIgnoreCase("safari")) {
                 wd = new SafariDriver(desiredCapabilities);
+            } else if (browser.equalsIgnoreCase("MS Edge") || browser.equalsIgnoreCase("MicrosoftEdge")
+            		|| browser.equalsIgnoreCase("edge")) {
+                wd = new EdgeDriver(desiredCapabilities);
             } else if (browser.equalsIgnoreCase("htmlunit")) {
+                desiredCapabilities.setBrowserName("htmlunit");
                 wd = new HtmlUnitDriver(desiredCapabilities);
                 ((HtmlUnitDriver) wd).setJavascriptEnabled(true);
             } else {
@@ -458,13 +501,13 @@ public class DefaultSessionFactory implements SessionFactory {
     public ExtWebDriver createNewSession(Map<String, String> options, WebDriver wd) {
         DefaultExtWebDriver selenium = new DefaultExtWebDriver();
         selenium.setWrappedDriver(wd);
-        
+
         // Get client properties file
-        ClientProperties properties = new ClientProperties(options.get("client"));
-        
+        ClientProperties properties = new ClientProperties(options);
+
         // Set client properties (specific to our factory/implementation)
         selenium.setClientProperties(properties);
-        
+
         // Set timeout value
         selenium.setMaxRequestTimeout(properties.getMaxRequestTimeoutString());
 
@@ -491,7 +534,7 @@ public class DefaultSessionFactory implements SessionFactory {
     }
 
     /**
-     * 
+     *
      * @param ffp
      *            for use in setting the firefox profile for the tests to use
      *            when running firefox
@@ -511,7 +554,7 @@ public class DefaultSessionFactory implements SessionFactory {
     }
 
     /**
-     * 
+     *
      * @param ffp
      *            the firefox profile you are using
      * @param propertiesFile
@@ -520,8 +563,8 @@ public class DefaultSessionFactory implements SessionFactory {
     private static void addPreferences(FirefoxProfile ffp, String propertiesFile) {
         Properties firefoxProfile = new Properties();
 
-        try {
-            firefoxProfile.load(new FileInputStream(propertiesFile));
+        try(FileInputStream fis = new FileInputStream(propertiesFile)) {
+            firefoxProfile.load(fis);
         } catch (Throwable th) {
             throw new RuntimeException("Could not load firefox profile", th);
         }
@@ -554,7 +597,7 @@ public class DefaultSessionFactory implements SessionFactory {
     }
 
     /**
-     * 
+     *
      * @param ffp
      *            the firefox profile specified
      * @param extensions
@@ -569,7 +612,7 @@ public class DefaultSessionFactory implements SessionFactory {
     }
 
     /**
-     * 
+     *
      * @param filePath
      *            the binary path location of the firefox app (where it's
      *            installed)
@@ -602,7 +645,7 @@ public class DefaultSessionFactory implements SessionFactory {
     /**
      * This method cleans out folders where the WebDriver temp information is
      * stored.
-     * 
+     *
      * @param properties
      *            client properties specified
      */
@@ -635,7 +678,7 @@ public class DefaultSessionFactory implements SessionFactory {
     /**
      * This method can be called to remove specific folders or set how long you
      * want to keep the temp information.
-     * 
+     *
      * @param folder
      *            which temp folder you want to remove
      * @param folderTemplates
@@ -649,7 +692,13 @@ public class DefaultSessionFactory implements SessionFactory {
                 - (numberOfDaysToKeepTempFolders * MILLISECONDS_IN_DAY);
 
         File tempFolder = new File(folder);
-        for (File currentFile : tempFolder.listFiles()) {
+        File[] folderChildren = tempFolder.listFiles();
+        if(null == folderChildren) {
+            log.debug("Folder '" + tempFolder.getName() + "' was empty. Nothing to delete");
+            return;
+        }
+
+        for (File currentFile : folderChildren) {
             if (currentFile.isDirectory()) {
                 for (String folderTemplate : folderTemplates) {
                     if (currentFile.getName().contains(folderTemplate)

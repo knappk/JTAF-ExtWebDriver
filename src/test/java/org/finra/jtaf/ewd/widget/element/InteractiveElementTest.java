@@ -90,6 +90,7 @@ public class InteractiveElementTest
         Assert.assertEquals("Clicked", content.getText());
     }
 
+
     @Test(expected = WidgetException.class)
     public void testClickException() throws Exception
     {
@@ -383,12 +384,47 @@ public class InteractiveElementTest
         Assert.assertEquals("hello", i.getValue());
     }
 
-    @Test(expected = WidgetException.class)
-    public void testTypeException() throws WidgetException
-    {
+    @Test
+    public void testJavascriptTypeSingleQuote() throws WidgetException{
         wd.open(url);
-        IInteractiveElement field = new InteractiveElement("//input[dff]");
-        field.type("hello");
+        wd.setTypeMode(true);
+        IInteractiveElement field = new InteractiveElement("//input[@id='inputFieldTest']");
+        field.waitForElementPresent();
+        field.type("'");
+        wd.setTypeMode(false);
+        Input i = new Input(field.getByLocator());
+        Assert.assertEquals("'", i.getValue());
+    }
+
+    @Test
+    public void testJavascriptTypeUserEscapedSingleQuote() throws WidgetException{
+        wd.open(url);
+        wd.setTypeMode(true);
+        IInteractiveElement field = new InteractiveElement("//input[@id='inputFieldTest']");
+        field.waitForElementPresent();
+        field.type("\\'");
+        wd.setTypeMode(false);
+        Input i = new Input(field.getByLocator());
+        Assert.assertEquals("'", i.getValue());
+    }
+
+    @Test
+    public void testJavascriptTypeWordWithApostrophe() throws WidgetException{
+        wd.open(url);
+        wd.setTypeMode(true);
+        IInteractiveElement field = new InteractiveElement("//input[@id='inputFieldTest']");
+        field.waitForElementPresent();
+        field.type("What's up doc?");
+        wd.setTypeMode(false);
+        Input i = new Input(field.getByLocator());
+        Assert.assertEquals("What's up doc?", i.getValue());
+    }
+
+    @Test(expected=WidgetException.class)
+    public void testTypeException() throws WidgetException{
+    	wd.open(url);
+    	IInteractiveElement field = new InteractiveElement("//input[dff]");
+    	field.type("hello");
     }
 
     @Test
@@ -398,44 +434,39 @@ public class InteractiveElementTest
         IInteractiveElement field = new InteractiveElement("//input[@id='inputFieldTest']");
         IElement element = new Element(getDiv("textcontent"));
 
-        field.waitForElementPresent();
-        field.typeAppend("hello");
+    	  field.waitForElementPresent();
+    	  field.typeAppend("hello");
         Assert.assertEquals("hello", element.getText());
         field.typeAppend("world");
         Assert.assertEquals("helloworld", element.getText());
 
     }
 
-    @Test(expected = WidgetException.class)
-    public void testTypeAppendException() throws WidgetException
-    {
-        wd.open(url);
-        IInteractiveElement field = new InteractiveElement("//input[dff]");
-        field.type("hello");
+    @Test(expected=WidgetException.class)
+    public void testTypeAppendException() throws WidgetException{
+    	wd.open(url);
+    	IInteractiveElement field = new InteractiveElement("//input[dff]");
+    	field.type("hello");
     }
 
     @Test
-    public void testHighlight() throws WidgetException
-    {
-        wd.open(url);
-        HighlightProvider highDriver = (HighlightProvider) wd;
-        if (highDriver.isHighlight())
-        {
-            IInteractiveElement b = new InteractiveElement("//button[@id='myButton']");
-            b.click();
-            Assert.assertEquals(getRgb(b.getCssValue("background-color")), highDriver.getHighlightColor("put"));
-        }
+    public void testHighlight() throws WidgetException{
+    	wd.open(url);
+    	HighlightProvider highDriver = (HighlightProvider) wd;
+    	if(highDriver.isHighlight()){
+    		IInteractiveElement b = new InteractiveElement("//button[@id='myButton']");
+        	b.click();
+        	Assert.assertEquals(getRgb(b.getCssValue("background-color")), highDriver.getHighlightColor("put"));
+    	}
 
     }
 
-    public String getRgb(String rgba)
-    {
-        if (rgba.startsWith("rgba") & rgba.split(",").length > 3)
-        {
-            String[] splits = rgba.substring(rgba.indexOf("a") + 1).split(",");
-            return "rgb" + splits[0] + "," + splits[1] + "," + splits[2] + ")";
-        }
-        else
-            return rgba;
+    public String getRgb(String rgba){
+    	if(rgba.startsWith("rgba") & rgba.split(",").length>3){
+    		String[] splits = rgba.substring(rgba.indexOf("a")+1).split(",");
+    		return "rgb"+splits[0]+","+splits[1]+","+splits[2]+")";
+    	}
+    	else
+    		return rgba;
     }
 }
