@@ -70,6 +70,8 @@ public class ClientProperties {
     private final String downloadFolder;
     private final String uploadFolder;
 
+    private final boolean flashEnabled;  // Chrome only?
+
     private final String maxAllowedSessions;
     private final String binaryPath;
     private final String webDriverIEDriver;
@@ -257,6 +259,8 @@ public class ClientProperties {
                     + "'",e);
         }
 
+
+
         tempFolderNameContainsList = load("tempFolderNameContainsList", null,
                 "Comma separated list of folders to clean with webDriver temp files");
 
@@ -298,6 +302,16 @@ public class ClientProperties {
             selectLastFrame = false;
         } else {
             selectLastFrame = true;
+        }
+
+        String enableFlash = load("flash.enabled", "false",
+                "Enable the Flash plugin. Property only works in Chrome for now."
+        );
+        if(enableFlash != null && (enableFlash.equalsIgnoreCase("true") || enableFlash.equalsIgnoreCase("yes")
+                || enableFlash.equalsIgnoreCase("on") || enableFlash.equalsIgnoreCase("1"))) {
+            flashEnabled = true;
+        } else {
+            flashEnabled = false;
         }
 
         gridSauceFile = load("grid.saucefile", null, "grid sauce file goes here") ;
@@ -731,4 +745,6 @@ public class ClientProperties {
 	public boolean shouldIgnoreSecurityDomains() {
 		return ignoreSecurityDomains;
 	}
+
+    public boolean shouldEnableFlash() { return flashEnabled; }
 }
