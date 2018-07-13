@@ -18,6 +18,7 @@ package org.finra.jtaf.ewd.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -290,17 +291,12 @@ public class DefaultExtWebDriver implements ExtWebDriver, HighlightProvider {
 
 	@Override
 	public String selectPopupWindow() throws StaleWindowIdListException {
-		if (currentWindowIds == null && currentWindowIds.size() > 0) {
-			if (currentWindowIds == null) {
-				throw new NullPointerException(
-						"WebDriver returned a null set of WindowIds to storeCurrentWindowIds()");
-			}
-			throw new StaleWindowIdListException(
-					"Must set current window IDs by caling storeCurrentWindowIds() before using this function",
-					Lists.newArrayList(currentWindowIds), Lists.newArrayList(wd
-							.getWindowHandles()));
-		}
-		String windowId = null;
+        if (currentWindowIds == null) {
+            throw new NullPointerException(
+                "WebDriver returned a null set of WindowIds to storeCurrentWindowIds()");
+        }
+
+        String windowId = null;
 
 		Set<String> windowIds = null;
 		long endTime = System.currentTimeMillis() + maxRequestTimeout;
@@ -623,7 +619,7 @@ public class DefaultExtWebDriver implements ExtWebDriver, HighlightProvider {
 
 		String html = getHtmlSource();
 		html = html.replaceAll(">\\s+<", "><");
-		InputStream input = new ByteArrayInputStream(html.getBytes());
+		InputStream input = new ByteArrayInputStream(html.getBytes(Charset.forName("UTF-8")));
 
 		XMLReader reader = new Parser();
 		reader.setFeature(Parser.namespacesFeature, false);
@@ -692,7 +688,7 @@ public class DefaultExtWebDriver implements ExtWebDriver, HighlightProvider {
 	 * child frame
 	 * 
 	 */
-	private class FrameNode {
+	private static class FrameNode {
 
 		private boolean isRoot;
 		private final FrameNode parentNode;
